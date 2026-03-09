@@ -1,53 +1,44 @@
-```python
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
+import os
+import logging
+from flask import Flask
+from threading import Thread
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-TOKEN = '8329740555:AAG3zHjsI2pHxF7Z8ecoj0Kr0ISMU2hjqtk'
+# 1. إعداد نظام Flask لمنع السيرفر من النوم (Anti-Sleep)
+app = Flask('')
 
-MENU_BUTTONS = [
-    ("رياضيات", "math"),
-    ("تنظيم حاسوب 💻", "computer"),
-    ("English", "english"),
-    ("كيمياء 🧪🔮", "chemistry"),
-    ("برمجة نظري 😁🖥", "programming"),
-    ("رسم هندسي نظري 👨‍🎨🎨", "engineering"),
-    ("فيزياء نظري 👩‍🔬📉", "physics"),
-]
+@app.route('/')
+def home():
+    return "البوت يعمل بنجاح في السحاب!"
+
+def run():
+    # Render يستخدم المنفذ 8080 بشكل افتراضي
+    app.run(host='0.0.0.0', port=8080)
+
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
+
+# 2. إعدادات البوت الأساسية
+# سيقوم الكود بقراءة التوكن من Environment Variables التي شرحناها
+TOKEN = os.environ.get('BOT_TOKEN')
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard = [
-        [InlineKeyboardButton(text=name, callback_data=code)] for name, code in MENU_BUTTONS
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text("اختر القسم:", reply_markup=reply_markup)
+    await update.message.reply_text("أهلاً بك! أنا بوت الطلاب، أعمل الآن 24 ساعة من السيرفر.")
 
-async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    data = query.data
-
-    if data == "math":
-        await query.edit_message_text(text="محتوى الرياضيات")
-    elif data == "computer":
-        await query.edit_message_text(text="محتوى تنظيم الحاسوب")
-    elif data == "english":
-        await query.edit_message_text(text="محتوى English")
-    elif data == "chemistry":
-await query.edit_message_text(text="محتوى الكيمياء")
-    elif data == "programming":
-        await query.edit_message_text(text="محتوى البرمجة النظرية")
-    elif data == "engineering":
-        await query.edit_message_text(text="محتوى الرسم الهندسي النظري")
-    elif data == "physics":
-        await query.edit_message_text(text="محتوى الفيزياء النظرية")
+if __name__ == '__main__':
+    # تشغيل سيرفر الويب في الخلفية
+    keep_alive()
+    
+    # بناء وتشغيل البوت
+    if TOKEN:
+        application = ApplicationBuilder().token(TOKEN).build()
+        
+        start_handler = CommandHandler('start', start)
+        application.add_handler(start_handler)
+        
+        print("جاري تشغيل البوت...")
+        application.run_polling()
     else:
-        await query.edit_message_text(text="لا يوجد محتوى لهذا القسم.")
-
-if _name_ == '_main_':
-    app = ApplicationBuilder().token(TOKEN).build()
-
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CallbackQueryHandler(button_handler))
-
-    app.run_polling()
-```
+        print("خطأ: لم يتم العثور على BOT_TOKEN في إعدادات السيرفر!")
